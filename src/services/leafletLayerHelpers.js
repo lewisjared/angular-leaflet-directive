@@ -49,6 +49,11 @@ angular.module("leaflet-directive").factory('leafletLayerHelpers', function ($ro
                 return new L.TileLayer.GeoJSON(params.url, params.pluginOptions, params.options);
             }
         },
+        geoJSON2: {
+            createLayer: function(params) {
+                return params.data.layer();
+            }
+        },
         utfGrid: {
             mustHaveUrl: true,
             createLayer: utfGridCreateLayer
