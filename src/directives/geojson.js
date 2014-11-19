@@ -1,4 +1,4 @@
-angular.module("leaflet-directive").directive('geojson', function ($log, $rootScope, leafletData, leafletHelpers) {
+angular.module("leaflet-directive").directive('geojson', function ($log, $rootScope, leafletData, leafletHelpers, leafletControlHelpers) {
     return {
         restrict: "A",
         scope: false,
@@ -8,6 +8,8 @@ angular.module("leaflet-directive").directive('geojson', function ($log, $rootSc
         link: function(scope, element, attrs, controller) {
             var safeApply = leafletHelpers.safeApply,
                 isDefined = leafletHelpers.isDefined,
+                getLayers = leafletData.getLayers,
+                updateLayersControl = leafletControlHelpers.updateLayersControl,
                 leafletScope  = controller.getLeafletScope(),
                 leafletGeoJSON = {};
             var defaultOnEachFeature = function(feature, layer) {
@@ -73,6 +75,13 @@ angular.module("leaflet-directive").directive('geojson', function ($log, $rootSc
                         leafletGeoJSON[layerName] = leafletLayer;
                     }
                     leafletData.setGeoJSON(leafletGeoJSON, attrs.id);
+
+                    // Only add the layers switch selector control if we have more than one baselayer + overlay
+                    getLayers().then(function(leafletLayers) {
+                        var layers = leafletScope.layers;
+                        updateLayersControl(map, attrs.id, true, layers.baselayers, layers.overlayLayers, leafletLayers);
+                    });
+
                 }, true);
             });
         }

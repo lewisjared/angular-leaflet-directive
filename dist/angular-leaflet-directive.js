@@ -468,7 +468,7 @@ angular.module("leaflet-directive").directive('legend', ["$log", "$http", "leafl
     };
 }]);
 
-angular.module("leaflet-directive").directive('geojson', ["$log", "$rootScope", "leafletData", "leafletHelpers", function ($log, $rootScope, leafletData, leafletHelpers) {
+angular.module("leaflet-directive").directive('geojson', ["$log", "$rootScope", "leafletData", "leafletHelpers", "leafletControlHelpers", function ($log, $rootScope, leafletData, leafletHelpers, leafletControlHelpers) {
     return {
         restrict: "A",
         scope: false,
@@ -478,6 +478,8 @@ angular.module("leaflet-directive").directive('geojson', ["$log", "$rootScope", 
         link: function(scope, element, attrs, controller) {
             var safeApply = leafletHelpers.safeApply,
                 isDefined = leafletHelpers.isDefined,
+                getLayers = leafletData.getLayers,
+                updateLayersControl = leafletControlHelpers.updateLayersControl,
                 leafletScope  = controller.getLeafletScope(),
                 leafletGeoJSON = {};
             var defaultOnEachFeature = function(feature, layer) {
@@ -543,6 +545,13 @@ angular.module("leaflet-directive").directive('geojson', ["$log", "$rootScope", 
                         leafletGeoJSON[layerName] = leafletLayer;
                     }
                     leafletData.setGeoJSON(leafletGeoJSON, attrs.id);
+
+                    // Only add the layers switch selector control if we have more than one baselayer + overlay
+                    getLayers().then(function(leafletLayers) {
+                        var layers = leafletScope.layers;
+                        updateLayersControl(map, attrs.id, true, layers.baselayers, layers.overlayLayers, leafletLayers);
+                    });
+
                 }, true);
             });
         }
@@ -2294,11 +2303,6 @@ angular.module("leaflet-directive").factory('leafletLayerHelpers', ["$rootScope"
                 return new L.TileLayer.GeoJSON(params.url, params.pluginOptions, params.options);
             }
         },
-        geoJSON2: {
-            createLayer: function(params) {
-                return params.data.layer();
-            }
-        },
         utfGrid: {
             mustHaveUrl: true,
             createLayer: utfGridCreateLayer
@@ -2573,7 +2577,7 @@ angular.module("leaflet-directive").factory('leafletLayerHelpers', ["$rootScope"
     };
 }]);
 
-angular.module("leaflet-directive").factory('leafletControlHelpers', ["$rootScope", "$log", "leafletHelpers", "leafletMapDefaults", function ($rootScope, $log, leafletHelpers, leafletMapDefaults) {
+angular.module("leaflet-directive").factory('leafletControlHelpers', ["$rootScope", "$log", "leafletHelpers", "leafletData", "leafletMapDefaults", function ($rootScope, $log, leafletHelpers, leafletData, leafletMapDefaults) {
     var isObject = leafletHelpers.isObject,
         isDefined = leafletHelpers.isDefined;
     var _layersControl;
@@ -2618,6 +2622,7 @@ angular.module("leaflet-directive").factory('leafletControlHelpers', ["$rootScop
 
         updateLayersControl: function(map, mapId, loaded, baselayers, overlays, leafletLayers) {
             var i;
+            var getGeoJSON = leafletData.getGeoJSON;
 
             var mustBeLoaded = _controlLayersMustBeVisible(baselayers, overlays, mapId);
             if (isDefined(_layersControl) && loaded) {
@@ -2642,6 +2647,13 @@ angular.module("leaflet-directive").factory('leafletControlHelpers', ["$rootScop
                         _layersControl.addOverlay(leafletLayers.overlays[i], overlays[i].name);
                     }
                 }
+                getGeoJSON().then(function(geoJSON) {
+                    for (i in geoJSON) {
+                        if (isDefined(geoJSON[i])) {
+                            _layersControl.addOverlay(geoJSON[i], i);
+                        }
+                    }
+                });
                 _layersControl.addTo(map);
             }
             return mustBeLoaded;

@@ -1,4 +1,4 @@
-angular.module("leaflet-directive").factory('leafletControlHelpers', function ($rootScope, $log, leafletHelpers, leafletMapDefaults) {
+angular.module("leaflet-directive").factory('leafletControlHelpers', function ($rootScope, $log, leafletHelpers, leafletData, leafletMapDefaults) {
     var isObject = leafletHelpers.isObject,
         isDefined = leafletHelpers.isDefined;
     var _layersControl;
@@ -43,6 +43,7 @@ angular.module("leaflet-directive").factory('leafletControlHelpers', function ($
 
         updateLayersControl: function(map, mapId, loaded, baselayers, overlays, leafletLayers) {
             var i;
+            var getGeoJSON = leafletData.getGeoJSON;
 
             var mustBeLoaded = _controlLayersMustBeVisible(baselayers, overlays, mapId);
             if (isDefined(_layersControl) && loaded) {
@@ -67,6 +68,13 @@ angular.module("leaflet-directive").factory('leafletControlHelpers', function ($
                         _layersControl.addOverlay(leafletLayers.overlays[i], overlays[i].name);
                     }
                 }
+                getGeoJSON().then(function(geoJSON) {
+                    for (i in geoJSON) {
+                        if (isDefined(geoJSON[i])) {
+                            _layersControl.addOverlay(geoJSON[i], i);
+                        }
+                    }
+                });
                 _layersControl.addTo(map);
             }
             return mustBeLoaded;
