@@ -1088,8 +1088,18 @@ angular.module("leaflet-directive").directive('controls', ["$log", "leafletHelpe
                     controls.draw = options;
                     map.addLayer(options.edit.featureGroup);
 
-                    var drawControl = new L.Control.Draw(options);
-                    map.addControl(drawControl);
+                    var drawControl = {};
+
+                    leafletScope.$watch('controls.draw.enabled', function(isEnabled) {
+                        if (isEnabled) {
+                            drawControl = new L.Control.Draw(options);
+                            map.addControl(drawControl);
+                        } else {
+                            if (drawControl instanceof L.Class) {
+                                map.removeControl(drawControl);
+                            }
+                        }
+                    });
                 }
 
                 if(isDefined(controls.custom)) {
